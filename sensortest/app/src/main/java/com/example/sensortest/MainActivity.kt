@@ -155,7 +155,7 @@ class MainActivity : ComponentActivity() {
                         }
                         if(oneGTime != null){
                             if(uftTime!!-oneGTime!! > tRE){
-                                accelSignificant.append("tFE satisfied\n")
+                                accelSignificant.append("tRE satisfied\n")
                             }
                         }
 
@@ -175,7 +175,7 @@ class MainActivity : ComponentActivity() {
                         oneGTime = null
                         accelSignificant.append("fall event reset\n")
                     }
-                    else if(totalAccelG > 0.9 && totalAccelG < 1.01 && oneGTime != null){
+                    else if(totalAccelG > 0.9 && totalAccelG < 1.01 && oneGTime == null){
                         accelSignificant.append(String.format("1-G: %.5f G\n",totalAccelG))
                         oneGTime = System.currentTimeMillis()
                     }
