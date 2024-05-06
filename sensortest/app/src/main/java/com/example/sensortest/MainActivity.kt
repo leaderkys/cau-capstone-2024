@@ -134,6 +134,7 @@ class MainActivity : ComponentActivity() {
                 tRESatisfied = false
                 tFESatisfied = false
                 vertVelSatisfied = false
+                queue.clear()
                 accelSignificant.append("fall event reset\n")
             }
 
