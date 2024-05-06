@@ -102,19 +102,40 @@ class MainActivity : ComponentActivity() {
             val queueLimit = 200
             val queue = CircularBuffer<Double>(queueLimit)
 
+
             /*tFE and tRE measurements*/
+            val lftTimeout = 1500
             var lftTriggered = false
             var lftTime: Long? = null
-            var oneGTime: Long? = null
+
             var uftTime: Long? = null
+
+            var oneGTime: Long? = null
+            var oneGTriggered = false
+
             val tRE = 350
+            var tRESatisfied = false
             val tFE = 600
-            val lftTimeout = 1500
+            var tFESatisfied = false
+
 
             /*vertical velocity related values*/
             val vertVelInterval = 120
             var vertVel = 0.0f
             val vertVelThres = -1.0
+            var vertVelSatisfied = false
+
+            private fun resetParams(){
+                lftTriggered = false
+                lftTime = null
+                uftTime = null
+                oneGTime = null
+                oneGTriggered = false
+                tRESatisfied = false
+                tFESatisfied = false
+                vertVelSatisfied = false
+                accelSignificant.append("fall event reset\n")
+            }
 
             @Suppress("SpellCheckingInspection")
             @SuppressLint("SetTextI18n", "DefaultLocale")
@@ -149,40 +170,38 @@ class MainActivity : ComponentActivity() {
                         accelSignificant.append(String.format("UFT Triggered: %.5f G\n",totalAccelG))
                         uftTime = System.currentTimeMillis()
                         if(lftTime != null){
-                            if(uftTime!! - lftTime!! > tFE){
+                            if(uftTime!! - lftTime!! < tFE){
                                 accelSignificant.append("tFE satisfied\n")
+                                tFESatisfied = true
                             }
                         }
                         if(oneGTime != null){
-                            if(uftTime!!-oneGTime!! > tRE){
+                            if(uftTime!! - oneGTime!! < tRE){
                                 accelSignificant.append("tRE satisfied\n")
+                                tRESatisfied = true
                             }
                         }
-
-                        lftTriggered = false
-                        uftTime = null
-                        lftTime = null
-                        oneGTime = null
-                        accelSignificant.append("fall event reset\n")
+                        if(tFESatisfied && tRESatisfied && oneGTriggered && vertVelSatisfied){
+                            accelSignificant.append("Fall Detected!!\n")
+                        }
+                        resetParams()
                     }
                 }
 
                 if(lftTriggered){
                     if(System.currentTimeMillis() - lftTime!! > lftTimeout){
-                        lftTriggered = false
-                        uftTime = null
-                        lftTime = null
-                        oneGTime = null
-                        accelSignificant.append("fall event reset\n")
+                        resetParams()
                     }
                     else if(totalAccelG > 0.9 && totalAccelG < 1.01 && oneGTime == null){
                         accelSignificant.append(String.format("1-G: %.5f G\n",totalAccelG))
                         oneGTime = System.currentTimeMillis()
+                        oneGTriggered = true
                     }
                 }
 
                 if(vertVel < vertVelThres){
                     accelSignificant.append(String.format("%.5f m/s\n",vertVel))
+                    vertVelSatisfied = true
                 }
 
                 accelSensorData.text = String.format("Accel data:(dt=%d ms, EWMA=%.2f ms)\n" +
