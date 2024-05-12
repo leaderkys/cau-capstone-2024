@@ -13,9 +13,9 @@ import android.widget.TextView
 import androidx.activity.ComponentActivity
 import kotlin.math.pow
 import kotlin.math.sqrt
+import kotlin.math.abs
 import java.lang.System
 import java.util.LinkedList
-import java.util.Queue
 
 class MainActivity : ComponentActivity() {
 
@@ -120,8 +120,10 @@ class MainActivity : ComponentActivity() {
 
 
             /*vertical velocity related values*/
-            val vertVelInterval = 120
+            //val vertVelInterval = 120
+            val vertVelDeltaThres = 0.01
             var vertVel = 0.0f
+            var vertVelDelta = 0.0f
             val vertVelThres = -1.0
             var vertVelSatisfied = false
 
@@ -146,7 +148,7 @@ class MainActivity : ComponentActivity() {
                 val az = event.values[2]
                 val totalAccel = sqrt(ax.pow(2) + ay.pow(2) + az.pow(2))
                 val totalAccelG = totalAccel/g
-                queue.add(totalAccel-g)
+                //queue.add(totalAccel-g)
 
                 /*measure sensor sampling interval*/
                 endTime = System.currentTimeMillis()
@@ -155,9 +157,18 @@ class MainActivity : ComponentActivity() {
                 startTime = endTime
 
 
+                /*
                 val list = queue.get((vertVelInterval/ewma).toInt() + 1)
                 if(list.isNotEmpty()){
                     vertVel = (list.sum()*ewma*.001).toFloat()
+                }
+                */
+
+                vertVelDelta = ((totalAccel-g)*ewma*0.001).toFloat()
+                if(abs(vertVelDelta) > vertVelDeltaThres){
+                    vertVel += vertVelDelta
+                }else{
+                    vertVel = 0.0f
                 }
 
                 if(totalAccelG < aLFT && !lftTriggered){
@@ -207,10 +218,10 @@ class MainActivity : ComponentActivity() {
 
                 accelSensorData.text = String.format("Accel data:(dt=%d ms, EWMA=%.2f ms)\n" +
                         " x=%8.5f, y=%8.5f, z=%8.5f, \n total=%.5f g\n" +
-                        " vertical velocity=%.5f m/s",
+                        " vertical velocity: Δ%.5f m/s, total:%.5f m/s," ,
                                        interval, ewma,
                                        ax, ay, az, totalAccelG,
-                                       vertVel)
+                                       vertVelDelta, vertVel)
             }
 
             @SuppressLint("SetTextI18n")
