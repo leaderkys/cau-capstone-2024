@@ -7,15 +7,18 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Bundle
+import android.text.SpannableString
 import android.text.method.ScrollingMovementMethod
+import android.text.style.ForegroundColorSpan
 import android.widget.Button
 import android.widget.TextView
 import androidx.activity.ComponentActivity
 import kotlin.math.pow
 import kotlin.math.sqrt
-import kotlin.math.abs
 import java.lang.System
 import java.util.LinkedList
+import android.graphics.Color
+import android.text.Spanned
 
 class MainActivity : ComponentActivity() {
 
@@ -74,7 +77,7 @@ class MainActivity : ComponentActivity() {
 
             fun get(len: Int): List<T>{
                 if(len > linkedList.size){
-                    return LinkedList<T>()
+                    return linkedList.subList(0, linkedList.size-1)
                 }
                 return linkedList.subList(linkedList.size-len, linkedList.size-1)
             }
@@ -110,8 +113,8 @@ class MainActivity : ComponentActivity() {
 
             var uftTime: Long? = null
 
-            var oneGTime: Long? = null
-            var oneGTriggered = false
+            //var oneGTime: Long? = null
+            //var oneGTriggered = false
 
             val tRE = 350
             var tRESatisfied = false
@@ -124,15 +127,15 @@ class MainActivity : ComponentActivity() {
             val vertVelDeltaThres = 0.01
             var vertVel = 0.0f
             var vertVelDelta = 0.0f
-            val vertVelThres = -1.0
+            val vertVelThres = -1.5
             var vertVelSatisfied = false
 
             private fun resetParams(){
                 lftTriggered = false
                 lftTime = null
                 uftTime = null
-                oneGTime = null
-                oneGTriggered = false
+                //oneGTime = null
+                //oneGTriggered = false
                 tRESatisfied = false
                 tFESatisfied = false
                 vertVelSatisfied = false
@@ -148,7 +151,7 @@ class MainActivity : ComponentActivity() {
                 val az = event.values[2]
                 val totalAccel = sqrt(ax.pow(2) + ay.pow(2) + az.pow(2))
                 val totalAccelG = totalAccel/g
-                //queue.add(totalAccel-g)
+                queue.add(totalAccel-g)
 
                 /*measure sensor sampling interval*/
                 endTime = System.currentTimeMillis()
@@ -165,7 +168,8 @@ class MainActivity : ComponentActivity() {
                 */
 
                 vertVelDelta = ((totalAccel-g)*ewma*0.001).toFloat()
-                if(abs(vertVelDelta) > vertVelDeltaThres){
+                //vertVelDelta = (( vertVelDelta * 1e2 ).toInt() / 1e3).toFloat()
+                if(lftTriggered){
                     vertVel += vertVelDelta
                 }else{
                     vertVel = 0.0f
@@ -187,14 +191,38 @@ class MainActivity : ComponentActivity() {
                                 tFESatisfied = true
                             }
                         }
+                        /*
                         if(oneGTime != null){
                             if(uftTime!! - oneGTime!! < tRE){
                                 accelSignificant.append("tRE satisfied\n")
                                 tRESatisfied = true
                             }
-                        }
-                        if(tFESatisfied && tRESatisfied && oneGTriggered && vertVelSatisfied){
-                            accelSignificant.append("Fall Detected!!\n")
+                        }else{
+                         */
+
+                            val list = queue.get((tRE/ewma).toInt() + 1)
+                            var prev = list[0]
+                            for(i in list){
+                                //accelSignificant.append(String.format("i=%.5f\n", i))
+                                if(i*prev < 0){
+                                    accelSignificant.append("tRE satisfied\n")
+                                    tRESatisfied = true
+                                    break
+                                }
+                                prev = i
+                            }
+                        //}
+                        if(tFESatisfied && tRESatisfied && vertVelSatisfied){
+                            /*
+                            val list = queue.get( ((uftTime!! - lftTime!!)/ewma).toInt()+1 )
+                            accelSignificant.append("Printing accel data dump:\n")
+                            for(i in list){
+                                accelSignificant.append(String.format("%.5f\n", i))
+                            }
+                            */
+                            val redColorString = SpannableString("Fall Detected!!\n")
+                            redColorString.setSpan(ForegroundColorSpan(Color.RED), 0, redColorString.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                            accelSignificant.append(redColorString)
                         }
                         resetParams()
                     }
@@ -204,14 +232,16 @@ class MainActivity : ComponentActivity() {
                     if(System.currentTimeMillis() - lftTime!! > lftTimeout){
                         resetParams()
                     }
+                    /*
                     else if(totalAccelG > 0.9 && totalAccelG < 1.01 && oneGTime == null){
                         accelSignificant.append(String.format("1-G: %.5f G\n",totalAccelG))
                         oneGTime = System.currentTimeMillis()
                         oneGTriggered = true
                     }
+                    */
                 }
 
-                if(vertVel < vertVelThres){
+                if(lftTriggered && vertVel < vertVelThres){
                     accelSignificant.append(String.format("%.5f m/s\n",vertVel))
                     vertVelSatisfied = true
                 }
