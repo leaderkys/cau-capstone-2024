@@ -117,6 +117,7 @@ class MainActivity : ComponentActivity() {
             //var oneGTriggered = false
 
             val tRE = 350
+            val tREMin = 70
             var tRESatisfied = false
             val tFE = 600
             var tFESatisfied = false
@@ -127,8 +128,10 @@ class MainActivity : ComponentActivity() {
             val vertVelDeltaThres = 0.01
             var vertVel = 0.0f
             var vertVelDelta = 0.0f
-            val vertVelThres = -1.0
+            val vertVelMax = -1.0
+            val vertVelMin = -0.3
             var vertVelSatisfied = false
+            var vertVelOverspeed = false
 
             private fun resetParams(){
                 lftTriggered = false
@@ -139,6 +142,7 @@ class MainActivity : ComponentActivity() {
                 tRESatisfied = false
                 tFESatisfied = false
                 vertVelSatisfied = false
+                vertVelOverspeed = false
                 queue.clear()
                 accelSignificant.append("fall event reset\n")
             }
@@ -201,15 +205,16 @@ class MainActivity : ComponentActivity() {
                          */
 
                             val list = queue.get((tRE/ewma).toInt() + 1)
-                            var prev = list[0]
-                            for(i in list){
+                            val start = ((tREMin)/ewma).toInt()
+                            var prev = list[start]
+                            for(i in start until list.size){
                                 //accelSignificant.append(String.format("i=%.5f\n", i))
-                                if(i*prev < 0){
+                                if(list[i]*prev < 0){
                                     accelSignificant.append("tRE satisfied\n")
                                     tRESatisfied = true
                                     break
                                 }
-                                prev = i
+                                prev = list[i]
                             }
                         //}
                         if(tFESatisfied && tRESatisfied && vertVelSatisfied){
@@ -241,7 +246,12 @@ class MainActivity : ComponentActivity() {
                     */
                 }
 
-                if(lftTriggered && vertVel < vertVelThres){
+                if(lftTriggered && vertVel < vertVelMax){
+                    accelSignificant.append(String.format("%.5f m/s OVERSPEED\n",vertVel))
+                    vertVelOverspeed = true
+                    vertVelSatisfied = false
+                }
+                if(lftTriggered && !vertVelOverspeed && vertVel < vertVelMin){
                     accelSignificant.append(String.format("%.5f m/s\n",vertVel))
                     vertVelSatisfied = true
                 }
