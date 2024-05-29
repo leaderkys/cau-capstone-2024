@@ -127,7 +127,7 @@ class MainActivity : ComponentActivity() {
             val vertVelDeltaThres = 0.01
             var vertVel = 0.0f
             var vertVelDelta = 0.0f
-            val vertVelThres = -1.5
+            val vertVelThres = -1.0
             var vertVelSatisfied = false
 
             private fun resetParams(){
