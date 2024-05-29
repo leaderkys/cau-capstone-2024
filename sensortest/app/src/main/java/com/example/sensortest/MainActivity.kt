@@ -120,6 +120,7 @@ class MainActivity : ComponentActivity() {
             val tREMin = 70
             var tRESatisfied = false
             val tFE = 600
+            val tFEMin = 300
             var tFESatisfied = false
 
 
@@ -190,7 +191,7 @@ class MainActivity : ComponentActivity() {
                         accelSignificant.append(String.format("UFT Triggered: %.5f G\n",totalAccelG))
                         uftTime = System.currentTimeMillis()
                         if(lftTime != null){
-                            if(uftTime!! - lftTime!! < tFE){
+                            if( (uftTime!! - lftTime!! < tFE) && (uftTime!! - lftTime!! > tFEMin)){
                                 accelSignificant.append("tFE satisfied\n")
                                 tFESatisfied = true
                             }
@@ -206,15 +207,17 @@ class MainActivity : ComponentActivity() {
 
                             val list = queue.get((tRE/ewma).toInt() + 1)
                             val start = ((tREMin)/ewma).toInt()
-                            var prev = list[start]
-                            for(i in start until list.size){
-                                //accelSignificant.append(String.format("i=%.5f\n", i))
-                                if(list[i]*prev < 0){
-                                    accelSignificant.append("tRE satisfied\n")
-                                    tRESatisfied = true
-                                    break
+                            if(start < list.size){
+                                var prev = list[start]
+                                for(i in start until list.size){
+                                    //accelSignificant.append(String.format("i=%.5f\n", i))
+                                    if(list[i]*prev < 0){
+                                        accelSignificant.append("tRE satisfied\n")
+                                        tRESatisfied = true
+                                        break
+                                    }
+                                    prev = list[i]
                                 }
-                                prev = list[i]
                             }
                         //}
                         if(tFESatisfied && tRESatisfied && vertVelSatisfied){
